@@ -124,4 +124,24 @@ export function generateTextures(scene: Phaser.Scene): void {
     ctx.fillRect(4, 7, 8, 6);
     ctx.fillRect(6, 12, 4, 2);
   });
+
+  mk('gust', 48, 24, (ctx) => {
+    ctx.fillStyle = 'rgba(200,220,240,0.85)';
+    ctx.beginPath();
+    ctx.moveTo(4, 12);
+    ctx.quadraticCurveTo(18, 2, 32, 10);
+    ctx.quadraticCurveTo(40, 14, 46, 8);
+    ctx.quadraticCurveTo(36, 20, 20, 18);
+    ctx.quadraticCurveTo(10, 16, 4, 12);
+    ctx.fill();
+  });
+
+  mk('shrine', 40, 48, (ctx) => {
+    ctx.fillStyle = '#c8d0d8';
+    ctx.fillRect(14, 18, 12, 28);
+    ctx.fillStyle = '#e8b86d';
+    ctx.fillRect(8, 10, 24, 10);
+    ctx.fillStyle = '#f3e6c8';
+    ctx.fillRect(16, 4, 8, 8);
+  });
 }

@@ -3,6 +3,7 @@ import { BootScene } from './scenes/BootScene';
 import { TitleScene } from './scenes/TitleScene';
 import { WorldScene } from './scenes/WorldScene';
 import { UIScene } from './scenes/UIScene';
+import { StoaTrialScene } from './scenes/StoaTrialScene';
 
 const parent = document.getElementById('game-root') ?? undefined;
 
@@ -13,6 +14,9 @@ new Phaser.Game({
   height: 720,
   backgroundColor: '#1a3d3a',
   pixelArt: true,
+  input: {
+    gamepad: true,
+  },
   physics: {
     default: 'arcade',
     arcade: {
@@ -24,5 +28,5 @@ new Phaser.Game({
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, TitleScene, WorldScene, UIScene],
+  scene: [BootScene, TitleScene, WorldScene, UIScene, StoaTrialScene],
 });

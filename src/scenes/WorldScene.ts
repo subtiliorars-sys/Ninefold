@@ -8,19 +8,15 @@ import {
   philosophyAt,
   regionLabel,
   type Philosophy,
+  type PhilosophyId,
 } from '../data/philosophies';
+import { inputBridge } from '../systems/InputBridge';
+import { loadSave, writeSave, type DialogueLogEntry, type SaveData } from '../systems/SaveGame';
 
 type DialoguePayload = { speaker: string; text: string };
 
 export class WorldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
-  private swordKey!: Phaser.Input.Keyboard.Key;
-  private interactKey!: Phaser.Input.Keyboard.Key;
-  private muteKey!: Phaser.Input.Keyboard.Key;
-  private pauseKey!: Phaser.Input.Keyboard.Key;
-  private enterKey!: Phaser.Input.Keyboard.Key;
   private enemies!: Phaser.Physics.Arcade.Group;
   private npcs!: Phaser.Physics.Arcade.StaticGroup;
   private charms!: Phaser.Physics.Arcade.Group;
@@ -30,13 +26,22 @@ export class WorldScene extends Phaser.Scene {
   private facing = new Phaser.Math.Vector2(0, 1);
   private hp = 5;
   private maxHp = 5;
-  private charmsCollected = new Set<string>();
+  private charmsCollected = new Set<PhilosophyId>();
+  private trialsCompleted = new Set<string>();
+  private dialogueLog: DialogueLogEntry[] = [];
   private lastRegion = '';
   private talking = false;
+  private foldOpen = false;
   private invulnUntil = 0;
+  private saveTimer?: Phaser.Time.TimerEvent;
+  private continueFromSave = false;
 
   constructor() {
     super('world');
+  }
+
+  init(data: { continue?: boolean }): void {
+    this.continueFromSave = Boolean(data?.continue);
   }
 
   create(): void {
@@ -48,7 +53,9 @@ export class WorldScene extends Phaser.Scene {
     this.walls = this.physics.add.staticGroup();
     this.scatterProps();
 
-    this.player = this.physics.add.sprite(WORLD_W / 2, WORLD_H / 2 + 80, 'player');
+    const spawnX = WORLD_W / 2;
+    const spawnY = WORLD_H / 2 + 80;
+    this.player = this.physics.add.sprite(spawnX, spawnY, 'player');
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(10);
     this.player.setSize(20, 24).setOffset(6, 6);
@@ -65,6 +72,15 @@ export class WorldScene extends Phaser.Scene {
     this.spawnEnemies();
 
     this.charms = this.physics.add.group();
+
+    if (this.continueFromSave) this.applySave(loadSave());
+    else {
+      this.charmsCollected.clear();
+      this.trialsCompleted.clear();
+      this.dialogueLog = [];
+    }
+
+    this.spawnStoaShrine();
     this.spawnCharms();
 
     this.physics.add.collider(this.player, this.walls);
@@ -73,14 +89,15 @@ export class WorldScene extends Phaser.Scene {
 
     this.physics.add.overlap(this.player, this.charms, (_p, c) => {
       const charm = c as Phaser.Physics.Arcade.Image;
-      const id = charm.getData('id') as string;
+      const id = charm.getData('id') as PhilosophyId;
       if (this.charmsCollected.has(id)) return;
       this.charmsCollected.add(id);
       audio.sfx('pickup');
       charm.destroy();
       const name = charm.getData('name') as string;
       this.game.events.emit('ninefold-toast', `Virtue Charm: ${name}`);
-      this.game.events.emit('ninefold-hud', this.hudState());
+      this.emitHud();
+      this.persist();
     });
 
     this.physics.add.overlap(this.swordHit, this.enemies, (_s, e) => {
@@ -90,36 +107,43 @@ export class WorldScene extends Phaser.Scene {
       enemy.destroy();
     });
 
-    this.physics.add.overlap(this.player, this.enemies, () => {
-      this.hurtPlayer();
-    });
+    this.physics.add.overlap(this.player, this.enemies, () => this.hurtPlayer());
 
-    const kb = this.input.keyboard!;
-    this.cursors = kb.createCursorKeys();
-    this.wasd = {
-      W: kb.addKey('W'),
-      A: kb.addKey('A'),
-      S: kb.addKey('S'),
-      D: kb.addKey('D'),
-    };
-    this.swordKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.interactKey = kb.addKey('E');
-    this.enterKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    this.muteKey = kb.addKey('M');
-    this.pauseKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    inputBridge.attach(this);
+    this.input.keyboard?.enabled && this.input.addPointer(2);
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (this.talking) return;
+      if (this.talking || this.foldOpen) return;
+      const touchy =
+        this.sys.game.device.os.android ||
+        this.sys.game.device.os.iOS ||
+        (window.matchMedia?.('(pointer: coarse)').matches ?? false);
+      if (touchy && (pointer.x < 200 || pointer.x > this.scale.width - 160)) return;
       if (pointer.leftButtonDown()) this.swingSword(true);
     });
 
-    this.game.events.emit('ninefold-hud', this.hudState());
+    this.game.events.on('ninefold-trial-complete', this.onTrialComplete, this);
+    this.game.events.on('ninefold-touch', this.onTouch, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game.events.off('ninefold-trial-complete', this.onTrialComplete, this);
+      this.game.events.off('ninefold-touch', this.onTouch, this);
+      this.saveTimer?.remove(false);
+    });
+
+    this.saveTimer = this.time.addEvent({
+      delay: 8000,
+      loop: true,
+      callback: () => this.persist(),
+    });
+
+    this.emitHud();
     this.game.events.emit(
       'ninefold-toast',
-      'You wake in Agora Grove. Visit the nine schools. Talk to mentors (E).',
+      this.continueFromSave
+        ? 'Welcome back, Seeker. Your Fold remembers.'
+        : 'You wake in Agora Grove. Visit Stoa shrine for a trial. N opens The Fold.',
     );
 
-    // Beach wreck marker text
     this.add
       .text(WORLD_W / 2, WORLD_H / 2 + 200, 'Agora Grove', {
         fontFamily: 'Cormorant Garamond, Georgia, serif',
@@ -131,31 +155,117 @@ export class WorldScene extends Phaser.Scene {
       .setAlpha(0.85);
   }
 
-  private hudState() {
-    return {
+  private onTouch(payload: {
+    moveX?: number;
+    moveY?: number;
+    sword?: boolean;
+    interact?: boolean;
+    fold?: boolean;
+  }): void {
+    if (payload.moveX != null && payload.moveY != null) {
+      inputBridge.virtualMove.set(payload.moveX, payload.moveY);
+    }
+    if (payload.sword) inputBridge.virtualSword = true;
+    if (payload.interact) inputBridge.virtualInteract = true;
+    if (payload.fold) inputBridge.virtualFold = true;
+  }
+
+  private onTrialComplete(id: string): void {
+    this.trialsCompleted.add(id);
+    if (id === 'stoa' && !this.charmsCollected.has('stoa')) {
+      this.charmsCollected.add('stoa');
+      // Remove world charm if still present
+      this.charms.getChildren().forEach((obj) => {
+        const c = obj as Phaser.Physics.Arcade.Image;
+        if (c.getData('id') === 'stoa') c.destroy();
+      });
+    }
+    this.emitHud();
+    this.persist();
+  }
+
+  private applySave(data: SaveData | null): void {
+    if (!data) return;
+    this.hp = data.hp;
+    this.maxHp = data.maxHp;
+    this.charmsCollected = new Set(data.charms);
+    this.trialsCompleted = new Set(data.trials);
+    this.dialogueLog = data.dialogueLog ?? [];
+    this.player.setPosition(data.x, data.y);
+    if (data.muted !== audio.isMuted()) audio.toggleMute();
+  }
+
+  private persist(): void {
+    if (!this.player?.active) return;
+    const data: SaveData = {
+      version: 1,
+      hp: this.hp,
+      maxHp: this.maxHp,
+      charms: [...this.charmsCollected],
+      trials: [...this.trialsCompleted],
+      x: this.player.x,
+      y: this.player.y,
+      dialogueLog: this.dialogueLog.slice(-24),
+      muted: audio.isMuted(),
+      savedAt: Date.now(),
+    };
+    writeSave(data);
+  }
+
+  private emitHud(): void {
+    this.game.events.emit('ninefold-hud', {
       hp: this.hp,
       maxHp: this.maxHp,
       charms: this.charmsCollected.size,
-      region: regionLabel(this.player.x, this.player.y),
+      region: this.player ? regionLabel(this.player.x, this.player.y) : 'Agora Grove',
       muted: audio.isMuted(),
+      trials: this.trialsCompleted.size,
+    });
+  }
+
+  private foldPayload() {
+    return {
+      charms: PHILOSOPHIES.map((p) => ({
+        id: p.id,
+        name: p.name,
+        charm: p.charm,
+        blurb: p.blurb,
+        owned: this.charmsCollected.has(p.id),
+        trialDone: this.trialsCompleted.has(p.id),
+      })),
+      log: this.dialogueLog.slice(-8).reverse(),
     };
   }
 
+  private toggleFold(): void {
+    this.foldOpen = !this.foldOpen;
+    if (this.foldOpen) {
+      this.talking = false;
+      this.game.events.emit('ninefold-dialogue', null);
+      this.game.events.emit('ninefold-fold', this.foldPayload());
+      audio.sfx('ui');
+    } else {
+      this.game.events.emit('ninefold-fold', null);
+    }
+  }
+
   private buildTerrain(): void {
-    // Base grass
     for (let y = 0; y < WORLD_H; y += 48) {
       for (let x = 0; x < WORLD_W; x += 48) {
         const img = this.add.image(x + 24, y + 24, 'grass').setDepth(0);
         const phil = philosophyAt(x + 24, y + 24);
-        if (phil) img.setTint(Phaser.Display.Color.GetColor(
-          (phil.color >> 16) & 0xff,
-          (phil.color >> 8) & 0xff,
-          phil.color & 0xff,
-        ));
+        if (phil) {
+          img.setTint(
+            Phaser.Display.Color.GetColor(
+              (phil.color >> 16) & 0xff,
+              (phil.color >> 8) & 0xff,
+              phil.color & 0xff,
+            ),
+          );
+        }
       }
     }
 
-    // Agora sand plaza
     const a = AGORA.bounds;
     for (let y = a.y + 120; y < a.y + a.h - 120; y += 48) {
       for (let x = a.x + 120; x < a.x + a.w - 120; x += 48) {
@@ -163,7 +273,6 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Soft water border
     for (let x = 0; x < WORLD_W; x += 48) {
       this.add.image(x + 24, 24, 'water').setDepth(0);
       this.add.image(x + 24, WORLD_H - 24, 'water').setDepth(0);
@@ -173,7 +282,6 @@ export class WorldScene extends Phaser.Scene {
       this.add.image(WORLD_W - 24, y + 24, 'water').setDepth(0);
     }
 
-    // Region labels
     for (const p of PHILOSOPHIES) {
       if (p.id === 'emptiness') continue;
       const cx = p.bounds.x + p.bounds.w / 2;
@@ -208,27 +316,32 @@ export class WorldScene extends Phaser.Scene {
     for (let i = 0; i < 90; i++) {
       const x = 80 + rng(WORLD_W - 160);
       const y = 80 + rng(WORLD_H - 160);
-      // Keep agora clearer
-      if (x > AGORA.bounds.x + 150 && x < AGORA.bounds.x + AGORA.bounds.w - 150 &&
-          y > AGORA.bounds.y + 150 && y < AGORA.bounds.y + AGORA.bounds.h - 150) {
+      if (
+        x > AGORA.bounds.x + 150 &&
+        x < AGORA.bounds.x + AGORA.bounds.w - 150 &&
+        y > AGORA.bounds.y + 150 &&
+        y < AGORA.bounds.y + AGORA.bounds.h - 150
+      ) {
         continue;
       }
-      const tree = this.add.image(x, y, 'tree').setDepth(5);
+      this.add.image(x, y, 'tree').setDepth(5);
       const body = this.walls.create(x, y + 18, 'stone') as Phaser.Physics.Arcade.Sprite;
       body.setVisible(false);
       body.setSize(20, 16);
       body.refreshBody();
-      void tree;
     }
 
-    // Border walls (sea cliffs)
     for (let x = 0; x < WORLD_W; x += 48) {
       (this.walls.create(x + 24, 40, 'stone') as Phaser.Physics.Arcade.Sprite).setVisible(false).refreshBody();
-      (this.walls.create(x + 24, WORLD_H - 40, 'stone') as Phaser.Physics.Arcade.Sprite).setVisible(false).refreshBody();
+      (this.walls.create(x + 24, WORLD_H - 40, 'stone') as Phaser.Physics.Arcade.Sprite)
+        .setVisible(false)
+        .refreshBody();
     }
     for (let y = 0; y < WORLD_H; y += 48) {
       (this.walls.create(40, y + 24, 'stone') as Phaser.Physics.Arcade.Sprite).setVisible(false).refreshBody();
-      (this.walls.create(WORLD_W - 40, y + 24, 'stone') as Phaser.Physics.Arcade.Sprite).setVisible(false).refreshBody();
+      (this.walls.create(WORLD_W - 40, y + 24, 'stone') as Phaser.Physics.Arcade.Sprite)
+        .setVisible(false)
+        .refreshBody();
     }
   }
 
@@ -241,6 +354,7 @@ export class WorldScene extends Phaser.Scene {
       npc.setData('speaker', p.mentor);
       npc.setData('text', p.greeting);
       npc.setData('school', p.name);
+      npc.setData('kind', 'mentor');
       npc.setDepth(8);
       npc.setSize(22, 22);
 
@@ -256,18 +370,45 @@ export class WorldScene extends Phaser.Scene {
         .setDepth(9);
     }
 
-    // Agora greeter
     const greeter = this.npcs.create(WORLD_W / 2, WORLD_H / 2 - 40, 'npc') as Phaser.Physics.Arcade.Sprite;
     greeter.setTint(0xe8b86d);
     greeter.setData('speaker', 'Ferry Keeper');
     greeter.setData('text', AGORA.greeting);
     greeter.setData('school', AGORA.name);
+    greeter.setData('kind', 'mentor');
     greeter.setDepth(8);
     this.add
       .text(WORLD_W / 2, WORLD_H / 2 - 68, 'Ferry Keeper', {
         fontFamily: 'Source Sans 3, sans-serif',
         fontSize: '14px',
         color: '#f3e6c8',
+        backgroundColor: '#12302caa',
+        padding: { x: 6, y: 2 },
+      })
+      .setOrigin(0.5)
+      .setDepth(9);
+  }
+
+  private spawnStoaShrine(): void {
+    const stoa = PHILOSOPHIES.find((p) => p.id === 'stoa')!;
+    const x = stoa.bounds.x + 200;
+    const y = stoa.bounds.y + 280;
+    const shrine = this.npcs.create(x, y, 'shrine') as Phaser.Physics.Arcade.Sprite;
+    shrine.setData('speaker', 'Cliff Shrine');
+    shrine.setData(
+      'text',
+      this.trialsCompleted.has('stoa')
+        ? 'The Still Column remembers your composure. Touch again to retrain.'
+        : 'Press E to enter the Stoa trial — dodge the wind, reach the Still Column.',
+    );
+    shrine.setData('school', 'Stoa Trial');
+    shrine.setData('kind', 'stoa-shrine');
+    shrine.setDepth(8);
+    this.add
+      .text(x, y - 36, 'Stoa Shrine', {
+        fontFamily: 'Source Sans 3, sans-serif',
+        fontSize: '14px',
+        color: '#e8b86d',
         backgroundColor: '#12302caa',
         padding: { x: 6, y: 2 },
       })
@@ -292,6 +433,7 @@ export class WorldScene extends Phaser.Scene {
 
   private spawnCharms(): void {
     for (const p of PHILOSOPHIES) {
+      if (this.charmsCollected.has(p.id)) continue;
       const x = p.bounds.x + p.bounds.w * 0.72;
       const y = p.bounds.y + p.bounds.h * 0.72;
       const c = this.charms.create(x, y, 'charm') as Phaser.Physics.Arcade.Image;
@@ -310,24 +452,25 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private hurtPlayer(): void {
-    if (this.time.now < this.invulnUntil || this.talking) return;
+    if (this.time.now < this.invulnUntil || this.talking || this.foldOpen) return;
     this.hp = Math.max(0, this.hp - 1);
     this.invulnUntil = this.time.now + 900;
     audio.sfx('hurt');
     this.cameras.main.shake(120, 0.004);
     this.player.setTint(0xff8888);
     this.time.delayedCall(200, () => this.player.clearTint());
-    this.game.events.emit('ninefold-hud', this.hudState());
+    this.emitHud();
     if (this.hp <= 0) {
       this.hp = this.maxHp;
       this.player.setPosition(WORLD_W / 2, WORLD_H / 2 + 80);
       this.game.events.emit('ninefold-toast', 'The Grove restores you. Try again, Seeker.');
-      this.game.events.emit('ninefold-hud', this.hudState());
+      this.emitHud();
+      this.persist();
     }
   }
 
   private swingSword(fromMouse: boolean): void {
-    if (this.swinging || this.talking) return;
+    if (this.swinging || this.talking || this.foldOpen) return;
     this.swinging = true;
     audio.sfx('slash');
 
@@ -338,9 +481,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     const dist = 28;
-    const sx = this.player.x + this.facing.x * dist;
-    const sy = this.player.y + this.facing.y * dist;
-    this.swordHit.setPosition(sx, sy);
+    this.swordHit.setPosition(this.player.x + this.facing.x * dist, this.player.y + this.facing.y * dist);
     this.swordHit.setVisible(true);
     this.swordHit.setRotation(Math.atan2(this.facing.y, this.facing.x));
     this.swordHit.body!.enable = true;
@@ -355,6 +496,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private tryTalk(): void {
+    if (this.foldOpen) {
+      this.toggleFold();
+      return;
+    }
     if (this.talking) {
       this.talking = false;
       this.game.events.emit('ninefold-dialogue', null);
@@ -362,11 +507,19 @@ export class WorldScene extends Phaser.Scene {
     }
     const nearby = this.npcs.getChildren().find((obj) => {
       const s = obj as Phaser.Physics.Arcade.Sprite;
-      return Phaser.Math.Distance.Between(this.player.x, this.player.y, s.x, s.y) < 56;
+      return Phaser.Math.Distance.Between(this.player.x, this.player.y, s.x, s.y) < 64;
     }) as Phaser.Physics.Arcade.Sprite | undefined;
 
     if (!nearby) {
-      this.game.events.emit('ninefold-toast', 'No one nearby. Walk up to a mentor and press E.');
+      this.game.events.emit('ninefold-toast', 'No one nearby. Walk up to a mentor or shrine (E).');
+      return;
+    }
+
+    if (nearby.getData('kind') === 'stoa-shrine') {
+      audio.sfx('ui');
+      this.persist();
+      this.scene.pause('world');
+      this.scene.launch('stoa-trial');
       return;
     }
 
@@ -376,50 +529,43 @@ export class WorldScene extends Phaser.Scene {
       speaker: `${nearby.getData('speaker')} — ${nearby.getData('school')}`,
       text: nearby.getData('text') as string,
     };
+    this.dialogueLog.push({ ...payload, at: Date.now() });
     this.game.events.emit('ninefold-dialogue', payload);
+    this.persist();
   }
 
   update(): void {
     if (!this.player?.active) return;
+    if (this.scene.isPaused()) return;
 
-    if (Phaser.Input.Keyboard.JustDown(this.muteKey)) {
+    const f = inputBridge.sample(this);
+
+    if (f.muteJust) {
       const muted = audio.toggleMute();
       this.game.events.emit('ninefold-toast', muted ? 'Music muted' : 'Music on');
-      this.game.events.emit('ninefold-hud', this.hudState());
+      this.emitHud();
+      this.persist();
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
-      this.game.events.emit('ninefold-pause-toggle');
-    }
+    if (f.pauseJust) this.game.events.emit('ninefold-pause-toggle');
+    if (f.foldJust) this.toggleFold();
+    if (f.interactJust) this.tryTalk();
 
-    if (Phaser.Input.Keyboard.JustDown(this.interactKey) || Phaser.Input.Keyboard.JustDown(this.enterKey)) {
-      this.tryTalk();
-    }
-
-    if (this.talking) {
+    if (this.talking || this.foldOpen) {
       this.player.setVelocity(0, 0);
       return;
     }
 
     const speed = 170;
-    let vx = 0;
-    let vy = 0;
-    if (this.cursors.left.isDown || this.wasd.A.isDown) vx -= 1;
-    if (this.cursors.right.isDown || this.wasd.D.isDown) vx += 1;
-    if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1;
-    if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1;
-
-    if (vx !== 0 || vy !== 0) {
-      const v = new Phaser.Math.Vector2(vx, vy).normalize().scale(speed);
-      this.player.setVelocity(v.x, v.y);
-      this.facing.set(vx, vy).normalize();
+    if (f.moveX !== 0 || f.moveY !== 0) {
+      this.player.setVelocity(f.moveX * speed, f.moveY * speed);
+      this.facing.set(f.moveX, f.moveY).normalize();
     } else {
       this.player.setVelocity(0, 0);
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.swordKey)) this.swingSword(false);
+    if (f.swordJust) this.swingSword(false);
 
-    // Wander enemies gently
     this.enemies.getChildren().forEach((obj) => {
       const e = obj as Phaser.Physics.Arcade.Sprite;
       if (!e.body) return;
@@ -431,11 +577,10 @@ export class WorldScene extends Phaser.Scene {
     const region = regionLabel(this.player.x, this.player.y);
     if (region !== this.lastRegion) {
       this.lastRegion = region;
-      this.game.events.emit('ninefold-hud', this.hudState());
+      this.emitHud();
       const phil: Philosophy | null = philosophyAt(this.player.x, this.player.y);
-      if (phil) {
-        this.game.events.emit('ninefold-toast', `${phil.name}: ${phil.blurb}`);
-      } else if (region === AGORA.name) {
+      if (phil) this.game.events.emit('ninefold-toast', `${phil.name}: ${phil.blurb}`);
+      else if (region === AGORA.name) {
         this.game.events.emit('ninefold-toast', 'Agora Grove — the heart of the isle');
       }
     }

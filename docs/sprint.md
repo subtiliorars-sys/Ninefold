@@ -1,31 +1,33 @@
-# Sprint notes — Ninefold v0.1
+# Sprint notes — Ninefold
 
-## Shipped this sprint
+## v0.2 (this pass)
 
-- Public repo: https://github.com/subtiliorars-sys/Ninefold
-- Playable Phaser 3 web scaffold (move, sword, talk, charms, soft enemies, HUD)
-- Nine philosophy regions + Agora Grove hub
-- Procedural pixel art + Web Audio bed/SFX
-- Design docs under `docs/`
-- GitHub Pages deploy workflow
+- localStorage save / continue / new journey
+- The Fold notebook (N) — charms + recent dialogue
+- Gamepad (A sword, X talk, Y Fold, Start pause, Select mute)
+- On-screen stick + Sword / Talk / Fold buttons
+- Stoa cliff shrine → storm-dodge trial → Still Heart
 
-## Next smoke tasks (for sub-agents / helpers)
+## v0.1
 
-1. Hand-paint tile atlas + character sheets (replace TextureFactory)
-2. Compose region music loops (replace AudioBus bed)
-3. Wire gamepad + mobile virtual stick per `docs/controls.md`
-4. Build one trial dungeon per school (start with Stoa storm dodge)
-5. Notebook / Fold UI for collected charms + dialogue log
-6. Save game (localStorage)
-7. Register node in neural-network `connectome/repos.yaml`
+- Public repo + GitHub Pages
+- Playable overworld, mentors, charms, shade-mites, HUD
+- Design docs
+
+## Next smoke tasks
+
+1. Hand-painted tile atlas + character sheets
+2. Composed region music loops
+3. Trials for remaining eight schools
+4. Remappable keys / accessibility panel
+5. Boat ferry shortcuts between docks
 
 ## Playtest checklist
 
-- [ ] Title → world loads
-- [ ] WASD movement readable
-- [ ] Sword clears a shade-mite
-- [ ] E opens mentor dialogue with legible text
-- [ ] Charm pickup increments HUD
-- [ ] Region toast fires when crossing borders
-- [ ] Mute + pause work
-- [ ] Pages deploy URL loads on desktop Chrome
+- [x] Title → world loads
+- [x] Continue restores position / charms
+- [x] N opens Fold
+- [x] Stoa shrine starts trial
+- [x] Trial success grants Still Heart
+- [x] Touch controls visible on coarse pointers
+- [x] Pages deploy after push

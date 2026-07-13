@@ -1,34 +1,35 @@
 # Controls
 
-## Keyboard + mouse (v0 — implemented)
+## Keyboard + mouse (implemented)
 
 | Action | Primary | Alternate |
 |--------|---------|-----------|
 | Move | WASD | Arrow keys |
 | Sword | Space | Left mouse button |
 | Interact / Talk | E | Enter |
-| Pause | Escape | P |
-| Mute music | M | — |
+| Fold notebook | N | Fold touch button / Gamepad Y |
+| Pause | Escape | Gamepad Start |
+| Mute music | M | Gamepad Select |
 
 Mouse aim: sword slash faces the cursor when using click; keyboard slash faces movement.
 
-## Gamepad (planned)
+## Gamepad (implemented)
 
 | Action | Xbox-style | Notes |
 |--------|------------|-------|
-| Move | Left stick | Deadzone 0.18 |
-| Sword | A / East | Hold for charged swing (later) |
-| Interact | X / West | |
+| Move | Left stick / D-pad | Deadzone 0.18 |
+| Sword | A | |
+| Interact | X | |
+| Fold | Y | |
 | Pause | Start | |
 | Mute | Select | |
 
-## Mobile / touch (planned)
+## Mobile / touch (implemented)
 
 - Virtual left stick (bottom-left)
-- Sword button (bottom-right)
-- Interact button (above sword)
-- Pause gear (top-right)
-- Large tap targets ≥ 48 CSS px; high-contrast icons
+- Sword / Talk / Fold buttons (bottom-right)
+- Large tap targets; high-contrast gold-on-teal
+- Stick also shown faintly on desktop for discoverability
 
 ## Accessibility
 

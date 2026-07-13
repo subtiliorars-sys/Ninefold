@@ -23,17 +23,16 @@ npm run build
 npm run preview
 ```
 
-## Controls (keyboard + mouse)
+## Controls (keyboard + mouse + gamepad + touch)
 
-| Action | Keys / mouse |
-|--------|----------------|
-| Move | WASD / Arrow keys |
-| Sword | Space / Left click |
-| Talk / Interact | E / Enter |
-| Pause / Menu | Esc |
-| Mute music | M |
-
-Gamepad and on-screen mobile controls are mapped in `docs/controls.md` (not wired in v0.1).
+| Action | Keys / mouse | Gamepad | Touch |
+|--------|----------------|---------|-------|
+| Move | WASD / Arrows | Left stick | Virtual stick |
+| Sword | Space / Click | A | Sword |
+| Talk / Shrine | E / Enter | X | Talk |
+| Fold notebook | N | Y | Fold |
+| Pause | Esc | Start | — |
+| Mute | M | Select | — |
 
 ## Stack
 

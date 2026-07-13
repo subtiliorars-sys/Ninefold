@@ -1,6 +1,6 @@
 {
   "name": "ninefold",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Ninefold — Zelda-like 2D top-down adventure across nine philosophies",
   "type": "module",
