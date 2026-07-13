@@ -1,0 +1,20 @@
+{
+  "name": "ninefold",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ninefold — Zelda-like 2D top-down adventure across nine philosophies",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "phaser": "^3.87.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  }
+}
