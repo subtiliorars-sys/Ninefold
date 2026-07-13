@@ -1,57 +1,32 @@
 # Ninefold
 
-**Ninefold** is a Zelda-like 2D top-down action-adventure: explore an island paradise,
-meet folksy characters and creatures, collect tools, swing a sword, and walk through
-**nine living philosophies** — each a region, a mentor, and a way of seeing.
+**Ninefold** is a Zelda-like 2D top-down adventure on an island paradise. Explore, meet
+characters, collect tools, and walk through **nine living philosophies** — each a region,
+a mentor, and a way of seeing.
 
-Inspired by *Link's Awakening* (Wind Fish), *Ocarina of Time*, and *The Wind Waker*:
-intimate island exploration, musical motifs, and a world that teaches by wandering.
+Built with **Phaser 3**, **TypeScript**, and **Vite**. Procedural pixel art and Web Audio;
+no heavy binary assets required to run locally.
 
-## Play
+## Run & verify
 
 ```bash
 npm install
-npm run dev
+npm run verify   # typecheck + production build
+npm run dev      # default http://localhost:5173
 ```
 
-Open the URL Vite prints (default `http://localhost:5173`).
+`verify` runs `smoke` (`typecheck` then `build`). Production preview: `npm run build && npm run preview`.
 
-**Build / preview**
+More detail: [`docs/controls.md`](docs/controls.md), [`docs/nine-philosophies.md`](docs/nine-philosophies.md), [`docs/gdd.md`](docs/gdd.md).
 
-```bash
-npm run build
-npm run preview
-```
+## Fleet routing
 
-## Controls (keyboard + mouse + gamepad + touch)
+Cross-repo agent work routes through the subtiliorars-sys connectome:
 
-| Action | Keys / mouse | Gamepad | Touch |
-|--------|----------------|---------|-------|
-| Move | WASD / Arrows | Left stick | Virtual stick |
-| Sword | Space / Click | A | Sword |
-| Talk / Shrine | E / Enter | X | Talk |
-| Fold notebook | N | Y | Fold |
-| Pause | Esc | Start | — |
-| Mute | M | Select | — |
-
-## Stack
-
-- **Phaser 3** + **TypeScript** + **Vite**
-- Procedural pixel art + Web Audio (no heavy binary assets required to run)
-- Deploy target: **GitHub Pages** (`./` base path)
-
-## Docs
-
-| Doc | Purpose |
-|-----|---------|
-| [`docs/gdd.md`](docs/gdd.md) | Game design document |
-| [`docs/nine-philosophies.md`](docs/nine-philosophies.md) | The nine schools / regions |
-| [`docs/world.md`](docs/world.md) | Island geography & tone |
-| [`docs/controls.md`](docs/controls.md) | Input map (KB/mouse + future gamepad/mobile) |
-| [`docs/audio-art.md`](docs/audio-art.md) | Art & sound direction |
-| [`docs/references.md`](docs/references.md) | Zelda inspirations (design lessons, not assets) |
+- Hub: [subtiliorars-sys/neural-network](https://github.com/subtiliorars-sys/neural-network)
+- Registry: [`connectome/repos.yaml`](https://github.com/subtiliorars-sys/neural-network/blob/main/connectome/repos.yaml)
+- Fleet Kanban: [`connectome/fleet-kanban.yaml`](https://github.com/subtiliorars-sys/neural-network/blob/main/connectome/fleet-kanban.yaml)
 
 ## License
 
-Source code: MIT (see `LICENSE`).  
-Game name, story, and original design: © subtiliorars-sys / JimmyTheHat Games — all rights reserved unless noted.
+Source code: MIT (see `LICENSE`). Game name, story, and original design: © subtiliorars-sys / JimmyTheHat Games.
