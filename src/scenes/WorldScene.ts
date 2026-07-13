@@ -162,6 +162,7 @@ export class WorldScene extends Phaser.Scene {
     sword?: boolean;
     interact?: boolean;
     fold?: boolean;
+    mute?: boolean;
   }): void {
     if (payload.moveX != null && payload.moveY != null) {
       inputBridge.virtualMove.set(payload.moveX, payload.moveY);
@@ -169,6 +170,7 @@ export class WorldScene extends Phaser.Scene {
     if (payload.sword) inputBridge.virtualSword = true;
     if (payload.interact) inputBridge.virtualInteract = true;
     if (payload.fold) inputBridge.virtualFold = true;
+    if (payload.mute) inputBridge.virtualMute = true;
   }
 
   private onTrialComplete(id: string): void {

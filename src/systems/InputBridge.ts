@@ -36,9 +36,11 @@ export class InputBridge {
   virtualSword = false;
   virtualInteract = false;
   virtualFold = false;
+  virtualMute = false;
   private virtualSwordPrev = false;
   private virtualInteractPrev = false;
   private virtualFoldPrev = false;
+  private virtualMutePrev = false;
 
   attach(scene: Phaser.Scene): void {
     const kb = scene.input.keyboard!;
@@ -111,12 +113,15 @@ export class InputBridge {
     if (this.virtualSword && !this.virtualSwordPrev) swordJust = true;
     if (this.virtualInteract && !this.virtualInteractPrev) interactJust = true;
     if (this.virtualFold && !this.virtualFoldPrev) foldJust = true;
+    if (this.virtualMute && !this.virtualMutePrev) muteJust = true;
     this.virtualSwordPrev = this.virtualSword;
     this.virtualInteractPrev = this.virtualInteract;
     this.virtualFoldPrev = this.virtualFold;
+    this.virtualMutePrev = this.virtualMute;
     this.virtualSword = false;
     this.virtualInteract = false;
     this.virtualFold = false;
+    this.virtualMute = false;
 
     if (moveX !== 0 || moveY !== 0) {
       const len = Math.hypot(moveX, moveY);
