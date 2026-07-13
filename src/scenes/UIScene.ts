@@ -117,7 +117,7 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(0, 0);
     const hint = this.add
-      .text(360, 52, 'E / Enter / Talk to close', {
+      .text(360, 52, 'E / Enter / Esc / Talk to close', {
         fontFamily: 'Source Sans 3, sans-serif',
         fontSize: '14px',
         color: '#8aa8a0',
@@ -144,7 +144,7 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     const pBody = this.add
-      .text(0, 30, 'Esc resume · N Fold notebook · M / Mute button · auto-saves', {
+      .text(0, 30, 'Esc to resume · N opens Fold · M / Music button toggles music · auto-saves', {
         fontFamily: 'Source Sans 3, sans-serif',
         fontSize: '20px',
         color: '#c9e0d8',
@@ -176,7 +176,7 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0);
     const fHint = this.add
-      .text(0, 230, 'N / Fold button to close', {
+      .text(0, 230, 'N / Esc / Fold button to close', {
         fontFamily: 'Source Sans 3, sans-serif',
         fontSize: '14px',
         color: '#8aa8a0',
@@ -247,7 +247,7 @@ export class UIScene extends Phaser.Scene {
       ...mkBtn(bx, by, 'Sword', 'sword'),
       ...mkBtn(bx - 88, by + 10, 'Talk', 'interact'),
       ...mkBtn(bx - 44, by - 78, 'Fold', 'fold'),
-      ...mkBtn(muteX, muteY, 'Mute', 'mute'),
+      ...mkBtn(muteX, muteY, 'Music', 'mute'),
     ]);
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -282,7 +282,7 @@ export class UIScene extends Phaser.Scene {
     this.hearts.forEach((h, i) => h.setVisible(i < s.hp));
     this.regionText.setText(s.region);
     const trials = s.trials != null ? ` · Trials ${s.trials}` : '';
-    this.charmText.setText(`Charms ${s.charms} / 9${trials}${s.muted ? ' · muted' : ''}`);
+    this.charmText.setText(`Charms ${s.charms} / 9${trials}${s.muted ? ' · music off' : ''}`);
   }
 
   private showToast(msg: string): void {
