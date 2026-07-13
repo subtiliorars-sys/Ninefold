@@ -587,12 +587,21 @@ export class WorldScene extends Phaser.Scene {
 
     if (f.muteJust) {
       const muted = audio.toggleMute();
-      this.game.events.emit('ninefold-toast', muted ? 'Music muted' : 'Music on');
+      this.game.events.emit('ninefold-toast', muted ? 'Music off' : 'Music on');
       this.emitHud();
       this.persist();
     }
 
-    if (f.pauseJust) this.game.events.emit('ninefold-pause-toggle');
+    if (f.pauseJust) {
+      if (this.talking) {
+        this.talking = false;
+        this.game.events.emit('ninefold-dialogue', null);
+      } else if (this.foldOpen) {
+        this.toggleFold();
+      } else {
+        this.game.events.emit('ninefold-pause-toggle');
+      }
+    }
     if (f.foldJust) this.toggleFold();
     if (f.interactJust) this.tryTalk();
 
