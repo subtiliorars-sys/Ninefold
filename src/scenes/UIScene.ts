@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/AudioBus';
 import type { DialogueLogEntry } from '../systems/SaveGame';
+import { inputBridge, CustomKeyBinds, getFriendlyKeyName } from '../systems/InputBridge';
 
 interface HudState {
   hp: number;
@@ -43,6 +44,12 @@ export class UIScene extends Phaser.Scene {
   private foldOverlay!: Phaser.GameObjects.Container;
   private foldBody!: Phaser.GameObjects.Text;
   private paused = false;
+
+  private settingsOverlay!: Phaser.GameObjects.Container;
+  private settingsListContainer!: Phaser.GameObjects.Container;
+  private settingsOpen = false;
+  private remappingAction: string | null = null;
+  private remappingText!: Phaser.GameObjects.Text;
   private touchRoot!: Phaser.GameObjects.Container;
   private stickKnob!: Phaser.GameObjects.Arc;
   private stickOrigin = new Phaser.Math.Vector2(110, 600);
@@ -137,24 +144,100 @@ export class UIScene extends Phaser.Scene {
 
     const pBg = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0e1f1d, 0.72);
     const pTitle = this.add
-      .text(0, -50, 'Paused', {
+      .text(0, -70, 'Paused', {
         fontFamily: 'Cormorant Garamond, Georgia, serif',
         fontSize: '48px',
         color: '#f3e6c8',
       })
       .setOrigin(0.5);
     const pBody = this.add
-      .text(0, 30, 'Esc resume · N Fold notebook · M mute · auto-saves', {
+      .text(0, 10, 'Esc resume · N Fold notebook · M mute · auto-saves', {
         fontFamily: 'Source Sans 3, sans-serif',
         fontSize: '20px',
         color: '#c9e0d8',
         align: 'center',
       })
       .setOrigin(0.5);
+
+    const pSettingsBtn = this.add
+      .text(0, 80, 'Settings / Keybinds', {
+        fontFamily: 'Source Sans 3, sans-serif',
+        fontSize: '22px',
+        color: '#e8b86d',
+        backgroundColor: '#12302c',
+        padding: { x: 16, y: 8 }
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    pSettingsBtn.on('pointerover', () => pSettingsBtn.setColor('#f3e6c8'));
+    pSettingsBtn.on('pointerout', () => pSettingsBtn.setColor('#e8b86d'));
+    pSettingsBtn.on('pointerdown', () => {
+      audio.sfx('ui');
+      this.showSettings();
+    });
+
     this.pauseOverlay = this.add
-      .container(this.scale.width / 2, this.scale.height / 2, [pBg, pTitle, pBody])
+      .container(this.scale.width / 2, this.scale.height / 2, [pBg, pTitle, pBody, pSettingsBtn])
       .setScrollFactor(0)
       .setDepth(200)
+      .setVisible(false);
+
+    // Build Settings Overlay
+    const sBg = this.add.rectangle(0, 0, 600, 520, 0x12302c, 0.96).setStrokeStyle(2, 0xe8b86d);
+    const sTitle = this.add
+      .text(0, -220, 'Key Bindings', {
+        fontFamily: 'Cormorant Garamond, Georgia, serif',
+        fontSize: '36px',
+        color: '#e8b86d',
+      })
+      .setOrigin(0.5);
+
+    this.settingsListContainer = this.add.container(0, 0);
+
+    const sBackBtn = this.add
+      .text(0, 220, 'Back to Pause Menu', {
+        fontFamily: 'Source Sans 3, sans-serif',
+        fontSize: '20px',
+        color: '#c9e0d8',
+        backgroundColor: '#0e1f1d',
+        padding: { x: 14, y: 8 }
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    sBackBtn.on('pointerover', () => sBackBtn.setColor('#f3e6c8'));
+    sBackBtn.on('pointerout', () => sBackBtn.setColor('#c9e0d8'));
+    sBackBtn.on('pointerdown', () => {
+      audio.sfx('ui');
+      this.hideSettings();
+    });
+
+    this.remappingText = this.add
+      .text(0, 0, 'Press any key...', {
+        fontFamily: 'Cormorant Garamond, Georgia, serif',
+        fontSize: '32px',
+        color: '#f3e6c8',
+        backgroundColor: '#0e1f1dee',
+        padding: { x: 40, y: 30 },
+        align: 'center',
+        stroke: '#e8b86d',
+        strokeThickness: 2
+      })
+      .setOrigin(0.5)
+      .setDepth(220)
+      .setVisible(false);
+
+    this.settingsOverlay = this.add
+      .container(this.scale.width / 2, this.scale.height / 2, [
+        sBg,
+        sTitle,
+        this.settingsListContainer,
+        sBackBtn,
+        this.remappingText
+      ])
+      .setScrollFactor(0)
+      .setDepth(210)
       .setVisible(false);
 
     const fBg = this.add.rectangle(0, 0, 820, 520, 0x12302c, 0.96).setStrokeStyle(2, 0xe8b86d);
@@ -196,6 +279,35 @@ export class UIScene extends Phaser.Scene {
     this.game.events.on('ninefold-pause-toggle', () => this.togglePause());
     this.game.events.on('ninefold-fold', (p: FoldPayload | null) => this.showFold(p));
 
+    // Keyboard listener for pause toggle & remapping
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      if (this.remappingAction) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const keyCode = event.keyCode;
+        const binds = inputBridge.getBinds();
+        binds[this.remappingAction as keyof CustomKeyBinds] = keyCode;
+        inputBridge.saveBinds(binds);
+
+        if (inputBridge.currentScene) {
+          inputBridge.registerKeys(inputBridge.currentScene);
+        }
+
+        audio.sfx('ui');
+        this.remappingAction = null;
+        this.remappingText.setVisible(false);
+        this.renderSettingsList();
+        return;
+      }
+
+      // Check if pause/resume key pressed
+      const currentBinds = inputBridge.getBinds();
+      if (this.paused && !this.settingsOpen && event.keyCode === currentBinds.pause) {
+        this.togglePause();
+      }
+    });
+
     this.scale.on('resize', () => this.layout());
     this.layout();
   }
@@ -208,6 +320,7 @@ export class UIScene extends Phaser.Scene {
     this.dialogueBox.setPosition(this.scale.width / 2, this.scale.height - 100);
     this.pauseOverlay.setPosition(this.scale.width / 2, this.scale.height / 2);
     this.foldOverlay.setPosition(this.scale.width / 2, this.scale.height / 2);
+    this.settingsOverlay?.setPosition(this.scale.width / 2, this.scale.height / 2);
     this.stickOrigin.set(110, this.scale.height - 120);
     this.touchRoot?.setPosition(0, 0);
   }
@@ -321,7 +434,14 @@ export class UIScene extends Phaser.Scene {
 
   private togglePause(): void {
     this.paused = !this.paused;
-    this.pauseOverlay.setVisible(this.paused);
+    if (!this.paused) {
+      this.settingsOpen = false;
+      this.settingsOverlay.setVisible(false);
+      this.remappingAction = null;
+      this.remappingText.setVisible(false);
+    }
+    this.pauseOverlay.setVisible(this.paused && !this.settingsOpen);
+    this.settingsOverlay.setVisible(this.paused && this.settingsOpen);
     if (this.paused) {
       if (this.scene.isActive('world')) this.scene.pause('world');
       if (this.scene.isActive('mini-trial')) this.scene.pause('mini-trial');
@@ -331,5 +451,101 @@ export class UIScene extends Phaser.Scene {
       if (this.scene.isPaused('mini-trial')) this.scene.resume('mini-trial');
       if (this.scene.isPaused('stoa-trial')) this.scene.resume('stoa-trial');
     }
+  }
+
+  private showSettings(): void {
+    this.settingsOpen = true;
+    this.pauseOverlay.setVisible(false);
+    this.settingsOverlay.setVisible(true);
+    this.renderSettingsList();
+  }
+
+  private hideSettings(): void {
+    this.settingsOpen = false;
+    this.settingsOverlay.setVisible(false);
+    this.pauseOverlay.setVisible(true);
+  }
+
+  private startRemapping(action: string): void {
+    this.remappingAction = action;
+    const labels: { [key: string]: string } = {
+      up: 'Move Up',
+      left: 'Move Left',
+      down: 'Move Down',
+      right: 'Move Right',
+      sword: 'Sword / Attack',
+      interact: 'Interact / Talk',
+      fold: 'Fold Notebook',
+      pause: 'Pause / Menu',
+      mute: 'Mute Audio',
+    };
+    const label = labels[action] || action;
+    this.remappingText.setText(`Press any key for\n"${label}"`);
+    this.remappingText.setVisible(true);
+  }
+
+  private renderSettingsList(): void {
+    this.settingsListContainer.removeAll(true);
+
+    const binds = inputBridge.getBinds();
+    const labels: { [key: string]: string } = {
+      up: 'Move Up',
+      left: 'Move Left',
+      down: 'Move Down',
+      right: 'Move Right',
+      sword: 'Sword / Attack',
+      interact: 'Interact / Talk',
+      fold: 'Fold Notebook',
+      pause: 'Pause / Menu',
+      mute: 'Mute Audio',
+    };
+
+    const actions = Object.keys(labels) as (keyof CustomKeyBinds)[];
+    const startY = -150;
+    const spacingY = 36;
+
+    actions.forEach((action, index) => {
+      const y = startY + index * spacingY;
+      const labelText = labels[action];
+      const keyCode = binds[action];
+      const keyName = getFriendlyKeyName(keyCode);
+
+      const rowBg = this.add
+        .rectangle(0, y, 520, 30, 0x0e1f1d, 0.5)
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+
+      const labelObj = this.add
+        .text(-240, y, labelText, {
+          fontFamily: 'Source Sans 3, sans-serif',
+          fontSize: '18px',
+          color: '#c9e0d8',
+        })
+        .setOrigin(0, 0.5);
+
+      const valObj = this.add
+        .text(240, y, keyName, {
+          fontFamily: 'Source Sans 3, sans-serif',
+          fontSize: '18px',
+          color: '#e8b86d',
+          fontStyle: 'bold',
+        })
+        .setOrigin(1, 0.5);
+
+      rowBg.on('pointerover', () => {
+        rowBg.setFillStyle(0x1a3d3a, 0.8);
+        labelObj.setColor('#f3e6c8');
+      });
+      rowBg.on('pointerout', () => {
+        rowBg.setFillStyle(0x0e1f1d, 0.5);
+        labelObj.setColor('#c9e0d8');
+      });
+      rowBg.on('pointerdown', () => {
+        audio.sfx('ui');
+        this.startRemapping(action);
+      });
+
+      this.settingsListContainer.add([rowBg, labelObj, valObj]);
+    });
   }
 }
