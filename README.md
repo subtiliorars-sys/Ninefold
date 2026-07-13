@@ -60,3 +60,9 @@ npm run preview
 
 Source code: MIT (see `LICENSE`).  
 Game name, story, and original design: © subtiliorars-sys / JimmyTheHat Games — all rights reserved unless noted.
+
+
+## Shared asset libraries
+
+**Agents:** do not invent colored-box placeholders when free art exists.
+See [docs/ASSETS.md](docs/ASSETS.md) → `game-visual-assets`, `game-audio-assets`, `game-3d-assets`.
