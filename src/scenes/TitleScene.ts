@@ -48,7 +48,7 @@ export class TitleScene extends Phaser.Scene {
       .text(
         width / 2,
         height * 0.82,
-        'WASD move · Space sword · E talk · N Fold · Esc pause · touch / gamepad OK',
+        'WASD move · Space sword · E talk · N Fold · M mute · Esc pause · touch / gamepad OK',
         {
           fontFamily: 'Source Sans 3, sans-serif',
           fontSize: '16px',

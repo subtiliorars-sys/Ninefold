@@ -144,7 +144,7 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     const pBody = this.add
-      .text(0, 30, 'Esc resume · N Fold notebook · M mute · auto-saves', {
+      .text(0, 30, 'Esc resume · N Fold notebook · M / Mute button · auto-saves', {
         fontFamily: 'Source Sans 3, sans-serif',
         fontSize: '20px',
         color: '#c9e0d8',
@@ -220,7 +220,7 @@ export class UIScene extends Phaser.Scene {
     this.stickKnob = this.add.circle(this.stickOrigin.x, this.stickOrigin.y, 28, 0xe8b86d, 0.85);
     base.setInteractive(new Phaser.Geom.Circle(0, 0, 70), Phaser.Geom.Circle.Contains);
 
-    const mkBtn = (x: number, y: number, label: string, event: 'sword' | 'interact' | 'fold') => {
+    const mkBtn = (x: number, y: number, label: string, event: 'sword' | 'interact' | 'fold' | 'mute') => {
       const c = this.add.circle(x, y, 36, 0x12302c, 0.7).setStrokeStyle(2, 0xe8b86d);
       const t = this.add
         .text(x, y, label, {
@@ -239,12 +239,15 @@ export class UIScene extends Phaser.Scene {
 
     const bx = this.scale.width - 90;
     const by = this.scale.height - 120;
+    const muteX = this.scale.width - 52;
+    const muteY = 52;
     this.touchRoot.add([
       base,
       this.stickKnob,
       ...mkBtn(bx, by, 'Sword', 'sword'),
       ...mkBtn(bx - 88, by + 10, 'Talk', 'interact'),
       ...mkBtn(bx - 44, by - 78, 'Fold', 'fold'),
+      ...mkBtn(muteX, muteY, 'Mute', 'mute'),
     ]);
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
