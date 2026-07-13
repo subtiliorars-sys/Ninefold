@@ -324,9 +324,11 @@ export class UIScene extends Phaser.Scene {
     this.pauseOverlay.setVisible(this.paused);
     if (this.paused) {
       if (this.scene.isActive('world')) this.scene.pause('world');
+      if (this.scene.isActive('mini-trial')) this.scene.pause('mini-trial');
       if (this.scene.isActive('stoa-trial')) this.scene.pause('stoa-trial');
     } else {
       if (this.scene.isPaused('world')) this.scene.resume('world');
+      if (this.scene.isPaused('mini-trial')) this.scene.resume('mini-trial');
       if (this.scene.isPaused('stoa-trial')) this.scene.resume('stoa-trial');
     }
   }

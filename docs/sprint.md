@@ -1,33 +1,26 @@
 # Sprint notes — Ninefold
 
-## v0.2 (this pass)
+## v0.3
+
+- All nine school shrines + mini-trials (Stoa, Garden, Academy, Way, Harmony, Inquiry, Craft, Compassion, Emptiness)
+- Agora ferry ring + return ferries to Grove
+- Region-aware procedural music beds
+- Trial success grants matching Virtue Charm
+
+## v0.2
 
 - localStorage save / continue / new journey
-- The Fold notebook (N) — charms + recent dialogue
-- Gamepad (A sword, X talk, Y Fold, Start pause, Select mute)
-- On-screen stick + Sword / Talk / Fold buttons
-- Stoa cliff shrine → storm-dodge trial → Still Heart
+- The Fold notebook (N)
+- Gamepad + touch controls
+- Stoa trial (now part of mini-trial system)
 
 ## v0.1
 
-- Public repo + GitHub Pages
-- Playable overworld, mentors, charms, shade-mites, HUD
-- Design docs
+- Playable overworld scaffold + Pages deploy
 
-## Next smoke tasks
+## Next
 
-1. Hand-painted tile atlas + character sheets
-2. Composed region music loops
-3. Trials for remaining eight schools
-4. Remappable keys / accessibility panel
-5. Boat ferry shortcuts between docks
-
-## Playtest checklist
-
-- [x] Title → world loads
-- [x] Continue restores position / charms
-- [x] N opens Fold
-- [x] Stoa shrine starts trial
-- [x] Trial success grants Still Heart
-- [x] Touch controls visible on coarse pointers
-- [x] Pages deploy after push
+1. Hand-painted tiles / characters
+2. Composed audio stems
+3. Difficulty tuning + more dialogue branches
+4. Remappable keys

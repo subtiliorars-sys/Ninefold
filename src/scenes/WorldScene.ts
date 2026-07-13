@@ -7,9 +7,9 @@ import {
   WORLD_W,
   philosophyAt,
   regionLabel,
-  type Philosophy,
   type PhilosophyId,
 } from '../data/philosophies';
+import { ferryDocks, shrinePos, trialMeta, TRIALS } from '../data/trials';
 import { inputBridge } from '../systems/InputBridge';
 import { loadSave, writeSave, type DialogueLogEntry, type SaveData } from '../systems/SaveGame';
 
@@ -80,7 +80,8 @@ export class WorldScene extends Phaser.Scene {
       this.dialogueLog = [];
     }
 
-    this.spawnStoaShrine();
+    this.spawnShrines();
+    this.spawnFerries();
     this.spawnCharms();
 
     this.physics.add.collider(this.player, this.walls);
@@ -141,7 +142,7 @@ export class WorldScene extends Phaser.Scene {
       'ninefold-toast',
       this.continueFromSave
         ? 'Welcome back, Seeker. Your Fold remembers.'
-        : 'You wake in Agora Grove. Visit Stoa shrine for a trial. N opens The Fold.',
+        : 'Agora Grove — use ferries, find school shrines (E), N opens The Fold.',
     );
 
     this.add
@@ -172,12 +173,12 @@ export class WorldScene extends Phaser.Scene {
 
   private onTrialComplete(id: string): void {
     this.trialsCompleted.add(id);
-    if (id === 'stoa' && !this.charmsCollected.has('stoa')) {
-      this.charmsCollected.add('stoa');
-      // Remove world charm if still present
+    const philId = id as PhilosophyId;
+    if (!this.charmsCollected.has(philId) && PHILOSOPHIES.some((p) => p.id === philId)) {
+      this.charmsCollected.add(philId);
       this.charms.getChildren().forEach((obj) => {
         const c = obj as Phaser.Physics.Arcade.Image;
-        if (c.getData('id') === 'stoa') c.destroy();
+        if (c.getData('id') === philId) c.destroy();
       });
     }
     this.emitHud();
@@ -389,31 +390,58 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(9);
   }
 
-  private spawnStoaShrine(): void {
-    const stoa = PHILOSOPHIES.find((p) => p.id === 'stoa')!;
-    const x = stoa.bounds.x + 200;
-    const y = stoa.bounds.y + 280;
-    const shrine = this.npcs.create(x, y, 'shrine') as Phaser.Physics.Arcade.Sprite;
-    shrine.setData('speaker', 'Cliff Shrine');
-    shrine.setData(
-      'text',
-      this.trialsCompleted.has('stoa')
-        ? 'The Still Column remembers your composure. Touch again to retrain.'
-        : 'Press E to enter the Stoa trial — dodge the wind, reach the Still Column.',
-    );
-    shrine.setData('school', 'Stoa Trial');
-    shrine.setData('kind', 'stoa-shrine');
-    shrine.setDepth(8);
-    this.add
-      .text(x, y - 36, 'Stoa Shrine', {
-        fontFamily: 'Source Sans 3, sans-serif',
-        fontSize: '14px',
-        color: '#e8b86d',
-        backgroundColor: '#12302caa',
-        padding: { x: 6, y: 2 },
-      })
-      .setOrigin(0.5)
-      .setDepth(9);
+  private spawnShrines(): void {
+    for (const t of TRIALS) {
+      const { x, y } = shrinePos(t.id);
+      const shrine = this.npcs.create(x, y, 'shrine') as Phaser.Physics.Arcade.Sprite;
+      const done = this.trialsCompleted.has(t.id);
+      shrine.setData('speaker', `${t.id} shrine`);
+      shrine.setData(
+        'text',
+        done ? `${t.title} complete. Enter again to retrain.` : `Press E — ${t.hint}`,
+      );
+      shrine.setData('school', t.title);
+      shrine.setData('kind', 'trial-shrine');
+      shrine.setData('trialId', t.id);
+      shrine.setDepth(8);
+      shrine.setTint(PHILOSOPHIES.find((p) => p.id === t.id)?.color ?? 0xe8b86d);
+      this.add
+        .text(x, y - 36, `${PHILOSOPHIES.find((p) => p.id === t.id)?.name ?? t.id} Shrine`, {
+          fontFamily: 'Source Sans 3, sans-serif',
+          fontSize: '14px',
+          color: '#e8b86d',
+          backgroundColor: '#12302caa',
+          padding: { x: 6, y: 2 },
+        })
+        .setOrigin(0.5)
+        .setDepth(9);
+    }
+  }
+
+  private spawnFerries(): void {
+    for (const d of ferryDocks()) {
+      const ferry = this.npcs.create(d.x, d.y, 'shrine') as Phaser.Physics.Arcade.Sprite;
+      ferry.setTint(0x4aa0c8);
+      ferry.setData('speaker', 'Island Ferry');
+      ferry.setData('text', `Sail to ${d.destLabel}?`);
+      ferry.setData('school', d.label);
+      ferry.setData('kind', 'ferry');
+      ferry.setData('destX', d.destX);
+      ferry.setData('destY', d.destY);
+      ferry.setData('destLabel', d.destLabel);
+      ferry.setDepth(8);
+      ferry.setScale(0.85);
+      this.add
+        .text(d.x, d.y - 32, d.label, {
+          fontFamily: 'Source Sans 3, sans-serif',
+          fontSize: '12px',
+          color: '#a8d8f0',
+          backgroundColor: '#12302caa',
+          padding: { x: 4, y: 2 },
+        })
+        .setOrigin(0.5)
+        .setDepth(9);
+    }
   }
 
   private spawnEnemies(): void {
@@ -515,11 +543,26 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    if (nearby.getData('kind') === 'stoa-shrine') {
+    if (nearby.getData('kind') === 'trial-shrine') {
+      const trialId = nearby.getData('trialId') as PhilosophyId;
+      if (!trialMeta(trialId)) return;
       audio.sfx('ui');
       this.persist();
       this.scene.pause('world');
-      this.scene.launch('stoa-trial');
+      this.scene.launch('mini-trial', { trialId });
+      return;
+    }
+
+    if (nearby.getData('kind') === 'ferry') {
+      const destX = nearby.getData('destX') as number;
+      const destY = nearby.getData('destY') as number;
+      const destLabel = nearby.getData('destLabel') as string;
+      audio.sfx('ferry');
+      this.player.setPosition(destX, destY);
+      this.cameras.main.flash(200, 40, 80, 90);
+      this.game.events.emit('ninefold-toast', `Ferry arrives at ${destLabel}`);
+      this.emitHud();
+      this.persist();
       return;
     }
 
@@ -575,13 +618,14 @@ export class WorldScene extends Phaser.Scene {
     });
 
     const region = regionLabel(this.player.x, this.player.y);
+    const phil = philosophyAt(this.player.x, this.player.y);
+    audio.setRegion(phil?.id ?? (region === AGORA.name ? 'agora' : 'agora'));
     if (region !== this.lastRegion) {
       this.lastRegion = region;
       this.emitHud();
-      const phil: Philosophy | null = philosophyAt(this.player.x, this.player.y);
       if (phil) this.game.events.emit('ninefold-toast', `${phil.name}: ${phil.blurb}`);
       else if (region === AGORA.name) {
-        this.game.events.emit('ninefold-toast', 'Agora Grove — the heart of the isle');
+        this.game.events.emit('ninefold-toast', 'Agora Grove — ferries ring the plaza');
       }
     }
   }

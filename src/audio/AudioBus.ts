@@ -2,6 +2,19 @@
 
 type Tone = { freq: number; dur: number; type?: OscillatorType; gain?: number };
 
+const REGION_SCALES: Record<string, number[]> = {
+  agora: [262, 294, 330, 392, 440, 523],
+  stoa: [247, 294, 330, 370, 440],
+  garden: [294, 330, 349, 392, 523],
+  academy: [262, 311, 349, 415, 494],
+  way: [220, 262, 294, 330, 392],
+  harmony: [262, 294, 330, 349, 392],
+  inquiry: [277, 311, 370, 415, 466],
+  craft: [196, 247, 294, 370, 440],
+  compassion: [233, 294, 349, 392, 466],
+  emptiness: [196, 220, 247, 294],
+};
+
 export class AudioBus {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -10,10 +23,14 @@ export class AudioBus {
   private musicTimer: number | null = null;
   private muted = false;
   private started = false;
+  private scale = REGION_SCALES.agora!;
+  private regionKey = 'agora';
 
   ensure(): void {
     if (this.ctx) return;
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const Ctx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     this.ctx = new Ctx();
     this.master = this.ctx.createGain();
     this.master.gain.value = 0.7;
@@ -33,6 +50,13 @@ export class AudioBus {
       this.started = true;
       this.startMusic();
     }
+  }
+
+  setRegion(key: string): void {
+    const k = key.toLowerCase();
+    if (k === this.regionKey) return;
+    this.regionKey = k;
+    this.scale = REGION_SCALES[k] ?? REGION_SCALES.agora!;
   }
 
   toggleMute(): boolean {
@@ -61,7 +85,7 @@ export class AudioBus {
     osc.stop(now + t.dur + 0.02);
   }
 
-  sfx(kind: 'slash' | 'pickup' | 'talk' | 'hurt' | 'ui' | 'defeat'): void {
+  sfx(kind: 'slash' | 'pickup' | 'talk' | 'hurt' | 'ui' | 'defeat' | 'ferry'): void {
     this.ensure();
     if (!this.sfxGain || this.muted) return;
     const map: Record<string, Tone[]> = {
@@ -80,27 +104,35 @@ export class AudioBus {
         { freq: 180, dur: 0.08, type: 'triangle', gain: 0.1 },
         { freq: 90, dur: 0.2, type: 'triangle', gain: 0.08 },
       ],
+      ferry: [
+        { freq: 196, dur: 0.12, type: 'sine', gain: 0.12 },
+        { freq: 247, dur: 0.18, type: 'triangle', gain: 0.1 },
+      ],
     };
     map[kind].forEach((t, i) => this.tone(this.sfxGain!, t, i * 0.05));
   }
 
   private startMusic(): void {
     if (!this.ctx || !this.musicGain) return;
-    const scale = [262, 294, 330, 392, 440, 523]; // C pent-ish
     const step = () => {
       if (!this.ctx || !this.musicGain || this.muted) {
         this.musicTimer = window.setTimeout(step, 900);
         return;
-      };
+      }
+      const scale = this.scale;
       const note = scale[Math.floor(Math.random() * scale.length)]!;
       this.tone(this.musicGain, { freq: note / 2, dur: 1.4, type: 'sine', gain: 0.08 });
       if (Math.random() > 0.45) {
-        this.tone(this.musicGain, {
-          freq: note,
-          dur: 0.35,
-          type: 'triangle',
-          gain: 0.06,
-        }, 0.15);
+        this.tone(
+          this.musicGain,
+          {
+            freq: note,
+            dur: 0.35,
+            type: 'triangle',
+            gain: 0.06,
+          },
+          0.15,
+        );
       }
       this.musicTimer = window.setTimeout(step, 700 + Math.random() * 900);
     };

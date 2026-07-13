@@ -3,7 +3,7 @@ import { BootScene } from './scenes/BootScene';
 import { TitleScene } from './scenes/TitleScene';
 import { WorldScene } from './scenes/WorldScene';
 import { UIScene } from './scenes/UIScene';
-import { StoaTrialScene } from './scenes/StoaTrialScene';
+import { MiniTrialScene } from './scenes/MiniTrialScene';
 
 const parent = document.getElementById('game-root') ?? undefined;
 
@@ -28,5 +28,5 @@ new Phaser.Game({
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, TitleScene, WorldScene, UIScene, StoaTrialScene],
+  scene: [BootScene, TitleScene, WorldScene, UIScene, MiniTrialScene],
 });
