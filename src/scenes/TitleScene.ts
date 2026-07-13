@@ -48,7 +48,7 @@ export class TitleScene extends Phaser.Scene {
       .text(
         width / 2,
         height * 0.82,
-        'WASD move · Space sword · E talk · N Fold · M music · Esc pause or close · touch / gamepad OK',
+        'Enter / Space to start · WASD move · E talk · N Fold · M music · Esc pause · touch / gamepad OK',
         {
           fontFamily: 'Source Sans 3, sans-serif',
           fontSize: '16px',
@@ -57,7 +57,9 @@ export class TitleScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
 
-    this.input.keyboard?.once('keydown-ENTER', () => void this.begin(saved));
+    const startGame = () => void this.begin(saved);
+    this.input.keyboard?.once('keydown-ENTER', startGame);
+    this.input.keyboard?.once('keydown-SPACE', startGame);
   }
 
   private mkButton(x: number, y: number, label: string, onClick: () => void): Phaser.GameObjects.Text {
@@ -72,6 +74,8 @@ export class TitleScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     t.on('pointerdown', () => onClick());
+    t.on('pointerover', () => t.setColor('#fff0d0'));
+    t.on('pointerout', () => t.setColor('#e8b86d'));
     return t;
   }
 
