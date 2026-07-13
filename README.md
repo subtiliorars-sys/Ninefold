@@ -11,10 +11,12 @@ intimate island exploration, musical motifs, and a world that teaches by wanderi
 
 ```bash
 npm install
+npm run smoke    # typecheck + production build (CI-friendly)
 npm run dev
 ```
 
-Open the URL Vite prints (default `http://localhost:5173`).
+Open the URL Vite prints (default `http://localhost:5173`).  
+First-session checklist: [`docs/FIRST-SESSION.md`](docs/FIRST-SESSION.md).
 
 **Build / preview**
 
@@ -22,6 +24,8 @@ Open the URL Vite prints (default `http://localhost:5173`).
 npm run build
 npm run preview
 ```
+
+`npm run verify` aliases `smoke`.
 
 ## Controls (keyboard + mouse + gamepad + touch)
 
@@ -44,6 +48,7 @@ npm run preview
 
 | Doc | Purpose |
 |-----|---------|
+| [`docs/FIRST-SESSION.md`](docs/FIRST-SESSION.md) | Install, smoke, 60s playtest |
 | [`docs/gdd.md`](docs/gdd.md) | Game design document |
 | [`docs/nine-philosophies.md`](docs/nine-philosophies.md) | The nine schools / regions |
 | [`docs/world.md`](docs/world.md) | Island geography & tone |
