@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/AudioBus';
-import { clearSave, hasSave } from '../systems/SaveGame';
+import { clearSave, formatSaveAge, hasSave, loadSave } from '../systems/SaveGame';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -39,7 +39,10 @@ export class TitleScene extends Phaser.Scene {
     });
 
     if (saved) {
-      this.mkButton(width / 2, height * 0.62, 'Continue', async () => this.begin(true));
+      const save = loadSave();
+      const age = save ? formatSaveAge(save.savedAt) : '';
+      const label = age ? `Continue · saved ${age}` : 'Continue';
+      this.mkButton(width / 2, height * 0.62, label, async () => this.begin(true));
     }
 
     this.tweens.add({ targets: start, alpha: 0.55, duration: 700, yoyo: true, repeat: -1 });
