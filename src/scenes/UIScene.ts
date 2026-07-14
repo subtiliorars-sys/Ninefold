@@ -47,6 +47,8 @@ export class UIScene extends Phaser.Scene {
   private stickKnob!: Phaser.GameObjects.Arc;
   private stickOrigin = new Phaser.Math.Vector2(110, 600);
   private stickPointerId: number | null = null;
+  private hudHidden = false;
+  private lastHud: HudState | null = null;
 
   constructor() {
     super('ui');
@@ -144,7 +146,7 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     const pBody = this.add
-      .text(0, 30, 'Esc to resume · N opens Fold · M / Music button toggles music · auto-saves', {
+      .text(0, 30, 'Esc to resume · N opens Fold · M / Music button toggles music · Tab hides HUD · auto-saves', {
         fontFamily: 'Source Sans 3, sans-serif',
         fontSize: '20px',
         color: '#c9e0d8',
@@ -196,8 +198,30 @@ export class UIScene extends Phaser.Scene {
     this.game.events.on('ninefold-pause-toggle', () => this.togglePause());
     this.game.events.on('ninefold-fold', (p: FoldPayload | null) => this.showFold(p));
 
+    this.input.keyboard?.on('keydown-TAB', (event: KeyboardEvent) => {
+      event.preventDefault();
+      this.toggleHudChrome();
+    });
+
     this.scale.on('resize', () => this.layout());
     this.layout();
+  }
+
+  private toggleHudChrome(): void {
+    this.hudHidden = !this.hudHidden;
+    if (this.hudHidden) {
+      this.hearts.forEach((h) => h.setVisible(false));
+      this.regionText.setVisible(false);
+      this.charmText.setVisible(false);
+      this.touchRoot.setVisible(false);
+      this.showToast('HUD hidden — Tab to show');
+      return;
+    }
+    this.touchRoot.setVisible(true);
+    this.regionText.setVisible(true);
+    this.charmText.setVisible(true);
+    if (this.lastHud) this.drawHud(this.lastHud);
+    this.showToast('HUD visible');
   }
 
   private layout(): void {
@@ -279,6 +303,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   private drawHud(s: HudState): void {
+    this.lastHud = s;
+    if (this.hudHidden) return;
     this.hearts.forEach((h, i) => h.setVisible(i < s.hp));
     this.regionText.setText(s.region);
     const trials = s.trials != null ? ` · Trials ${s.trials}` : '';
