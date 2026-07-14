@@ -68,6 +68,31 @@ export class TitleScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
 
+    const tipKey = 'ninefold-first-title-tip-v1';
+    let tipSeen = false;
+    try {
+      tipSeen = typeof localStorage !== 'undefined' && localStorage.getItem(tipKey) === '1';
+    } catch {
+      tipSeen = true;
+    }
+    if (!tipSeen) {
+      const tip = this.add
+        .text(width / 2, height * 0.74, 'First walk? Talk with E · Fold with N · mute music with M · Esc pauses', {
+          fontFamily: 'Source Sans 3, sans-serif',
+          fontSize: '18px',
+          color: '#e8b86d',
+        })
+        .setOrigin(0.5);
+      this.time.delayedCall(7000, () => {
+        tip.destroy();
+        try {
+          localStorage.setItem(tipKey, '1');
+        } catch {
+          /* ignore */
+        }
+      });
+    }
+
     const startGame = () => void this.begin(saved);
     this.input.keyboard?.once('keydown-ENTER', startGame);
     this.input.keyboard?.once('keydown-SPACE', startGame);
