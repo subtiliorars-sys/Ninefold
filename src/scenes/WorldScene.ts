@@ -58,7 +58,8 @@ export class WorldScene extends Phaser.Scene {
     this.player = this.physics.add.sprite(spawnX, spawnY, 'player');
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(10);
-    this.player.setSize(20, 24).setOffset(6, 6);
+    this.player.setDisplaySize(36, 46);
+    this.player.setSize(20, 24).setOffset(8, 14);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     this.swordHit = this.physics.add.image(-100, -100, 'sword');
@@ -257,7 +258,7 @@ export class WorldScene extends Phaser.Scene {
   private buildTerrain(): void {
     for (let y = 0; y < WORLD_H; y += 48) {
       for (let x = 0; x < WORLD_W; x += 48) {
-        const img = this.add.image(x + 24, y + 24, 'grass').setDepth(0);
+        const img = this.add.image(x + 24, y + 24, 'grass').setDisplaySize(48, 48).setDepth(0);
         const phil = philosophyAt(x + 24, y + 24);
         if (phil) {
           img.setTint(
@@ -274,17 +275,17 @@ export class WorldScene extends Phaser.Scene {
     const a = AGORA.bounds;
     for (let y = a.y + 120; y < a.y + a.h - 120; y += 48) {
       for (let x = a.x + 120; x < a.x + a.w - 120; x += 48) {
-        this.add.image(x + 24, y + 24, 'sand').setDepth(0);
+        this.add.image(x + 24, y + 24, 'sand').setDisplaySize(48, 48).setDepth(0);
       }
     }
 
     for (let x = 0; x < WORLD_W; x += 48) {
-      this.add.image(x + 24, 24, 'water').setDepth(0);
-      this.add.image(x + 24, WORLD_H - 24, 'water').setDepth(0);
+      this.add.image(x + 24, 24, 'water').setDisplaySize(48, 48).setDepth(0);
+      this.add.image(x + 24, WORLD_H - 24, 'water').setDisplaySize(48, 48).setDepth(0);
     }
     for (let y = 0; y < WORLD_H; y += 48) {
-      this.add.image(24, y + 24, 'water').setDepth(0);
-      this.add.image(WORLD_W - 24, y + 24, 'water').setDepth(0);
+      this.add.image(24, y + 24, 'water').setDisplaySize(48, 48).setDepth(0);
+      this.add.image(WORLD_W - 24, y + 24, 'water').setDisplaySize(48, 48).setDepth(0);
     }
 
     for (const p of PHILOSOPHIES) {
@@ -329,7 +330,7 @@ export class WorldScene extends Phaser.Scene {
       ) {
         continue;
       }
-      this.add.image(x, y, 'tree').setDepth(5);
+      this.add.image(x, y, 'tree').setDisplaySize(48, 48).setDepth(5);
       const body = this.walls.create(x, y + 18, 'stone') as Phaser.Physics.Arcade.Sprite;
       body.setVisible(false);
       body.setSize(20, 16);
@@ -355,6 +356,7 @@ export class WorldScene extends Phaser.Scene {
       const x = p.bounds.x + p.bounds.w / 2;
       const y = p.bounds.y + p.bounds.h / 2;
       const npc = this.npcs.create(x, y, 'npc') as Phaser.Physics.Arcade.Sprite;
+      npc.setDisplaySize(36, 46);
       npc.setTint(p.color);
       npc.setData('speaker', p.mentor);
       npc.setData('text', p.greeting);
@@ -376,6 +378,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     const greeter = this.npcs.create(WORLD_W / 2, WORLD_H / 2 - 40, 'npc') as Phaser.Physics.Arcade.Sprite;
+    greeter.setDisplaySize(36, 46);
     greeter.setTint(0xe8b86d);
     greeter.setData('speaker', 'Ferry Keeper');
     greeter.setData('text', AGORA.greeting);
@@ -398,6 +401,7 @@ export class WorldScene extends Phaser.Scene {
     for (const t of TRIALS) {
       const { x, y } = shrinePos(t.id);
       const shrine = this.npcs.create(x, y, 'shrine') as Phaser.Physics.Arcade.Sprite;
+      shrine.setDisplaySize(40, 48);
       const done = this.trialsCompleted.has(t.id);
       shrine.setData('speaker', `${t.id} shrine`);
       shrine.setData(
@@ -425,6 +429,7 @@ export class WorldScene extends Phaser.Scene {
   private spawnFerries(): void {
     for (const d of ferryDocks()) {
       const ferry = this.npcs.create(d.x, d.y, 'shrine') as Phaser.Physics.Arcade.Sprite;
+      ferry.setDisplaySize(36, 40);
       ferry.setTint(0x4aa0c8);
       ferry.setData('speaker', 'Island Ferry');
       ferry.setData('text', `Sail to ${d.destLabel}?`);
@@ -455,6 +460,7 @@ export class WorldScene extends Phaser.Scene {
         const x = p.bounds.x + 120 + Math.random() * (p.bounds.w - 240);
         const y = p.bounds.y + 120 + Math.random() * (p.bounds.h - 240);
         const e = this.enemies.create(x, y, 'enemy') as Phaser.Physics.Arcade.Sprite;
+        e.setDisplaySize(34, 44);
         e.setDepth(8);
         e.setBounce(1, 1);
         e.setCollideWorldBounds(true);

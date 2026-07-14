@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 
-/** Runtime pixel textures — replaceable later with atlas files. */
+/**
+ * Procedural fallbacks for keys not loaded from `public/assets/kenney/`.
+ * BootScene preloads Kenney CC0 PNGs under the same keys first.
+ */
 export function generateTextures(scene: Phaser.Scene): void {
   const mk = (key: string, w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void) => {
     if (scene.textures.exists(key)) return;
