@@ -58,7 +58,11 @@ export class UIScene extends Phaser.Scene {
     const pad = 16;
 
     for (let i = 0; i < 5; i++) {
-      const h = this.add.image(pad + 12 + i * 22, pad + 12, 'heart').setScrollFactor(0).setDepth(100);
+      const h = this.add
+        .image(pad + 12 + i * 22, pad + 12, 'heart')
+        .setDisplaySize(16, 16)
+        .setScrollFactor(0)
+        .setDepth(100);
       this.hearts.push(h);
     }
 

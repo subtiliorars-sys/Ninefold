@@ -1,4 +1,4 @@
-# Shared game assets (agents — read this first)
+﻿# Shared game assets (agents — read this first)
 
 **Stop drawing colored boxes / procedural placeholders** when free art already lives
 in the house asset libraries.
@@ -30,8 +30,16 @@ Also indexed in `neural-network` → `connectome/repos.yaml`
 
 ## Suggested starter packs for this title
 
-See the “Suggested mapping” sections in each library README, then pick the
-Kenney packs that match genre (platformer / sports / RPG / space / …).
+Wired into `public/assets/kenney/` (CC0 Kenney; licenses beside files / medals):
+
+- **medals** — charm icon (`flat_medal1.png`)
+- **top-down-shooter** — player / npc / enemy
+- **tiny-town** — grass, sand, stone, water, tree, shrine tiles
+- **pixel-platformer** — heart HUD
+- **new-platformer-pack** — title hill background
+- **pixel-ui-pack** — button chrome (`btn.png`, reserved)
+
+Sword / gust / leftover keys still use procedural `TextureFactory` fallbacks.
 
 ## Fetch more packs
 

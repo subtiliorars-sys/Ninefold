@@ -11,9 +11,17 @@ export class TitleScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const saved = hasSave();
 
-    this.add.rectangle(width / 2, height / 2, width, height, 0x1a3d3a);
-    for (let i = 0; i < 40; i++) {
-      this.add.circle(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), 2, 0x3d8a84, 0.35);
+    if (this.textures.exists('title-bg')) {
+      this.add
+        .image(width / 2, height / 2, 'title-bg')
+        .setDisplaySize(width, height)
+        .setAlpha(0.92);
+      this.add.rectangle(width / 2, height / 2, width, height, 0x0e1f1d, 0.42);
+    } else {
+      this.add.rectangle(width / 2, height / 2, width, height, 0x1a3d3a);
+      for (let i = 0; i < 40; i++) {
+        this.add.circle(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), 2, 0x3d8a84, 0.35);
+      }
     }
 
     this.add

@@ -71,6 +71,7 @@ export class MiniTrialScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.player = this.physics.add.sprite(120, H / 2, 'player');
+    this.player.setDisplaySize(36, 46);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(10);
 
