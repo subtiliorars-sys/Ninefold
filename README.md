@@ -9,6 +9,11 @@ meet folksy characters and creatures, collect tools, swing a sword, and walk thr
 Inspired by *Link's Awakening* (Wind Fish), *Ocarina of Time*, and *The Wind Waker*:
 intimate island exploration, musical motifs, and a world that teaches by wandering.
 
+
+### First-run tip
+
+Open [Play online](https://subtiliorars-sys.github.io/Ninefold/) (or `npm run smoke` then `npm run dev`). Talk with **E**, Fold with **N**, mute music with **M**, Esc pauses — Tab toggles HUD.
+
 ## Play
 
 ```bash
