@@ -6,6 +6,10 @@ export class BootScene extends Phaser.Scene {
     super('boot');
   }
 
+  preload(): void {
+    this.load.image('charm', 'assets/kenney/medals/flat_medal1.png');
+  }
+
   create(): void {
     generateTextures(this);
     this.scene.start('title');
