@@ -144,6 +144,8 @@ export class WorldScene extends Phaser.Scene {
         ? 'Welcome back, Seeker. Your Fold remembers.'
         : 'Agora Grove — use ferries, find school shrines (E), N opens The Fold.',
     );
+    // Avoid a second region-entry toast on the first update frame.
+    this.lastRegion = regionLabel(this.player.x, this.player.y);
 
     this.add
       .text(WORLD_W / 2, WORLD_H / 2 + 200, 'Agora Grove', {
