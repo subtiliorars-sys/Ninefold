@@ -439,7 +439,6 @@ export class WorldScene extends Phaser.Scene {
       ferry.setData('destY', d.destY);
       ferry.setData('destLabel', d.destLabel);
       ferry.setDepth(8);
-      ferry.setScale(0.85);
       this.add
         .text(d.x, d.y - 32, d.label, {
           fontFamily: 'Source Sans 3, sans-serif',
