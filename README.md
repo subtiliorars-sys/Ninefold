@@ -1,5 +1,7 @@
 # Ninefold
 
+**▶ [Play online](https://subtiliorars-sys.github.io/Ninefold/)** — Zelda-like 2D top-down adventure across nine philosophies on an island paradise.
+
 **Ninefold** is a Zelda-like 2D top-down action-adventure: explore an island paradise,
 meet folksy characters and creatures, collect tools, swing a sword, and walk through
 **nine living philosophies** — each a region, a mentor, and a way of seeing.
