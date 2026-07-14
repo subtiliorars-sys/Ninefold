@@ -37,6 +37,17 @@ export function hasSave(): boolean {
   return loadSave() != null;
 }
 
+/** Human-readable age for title-screen Continue label. */
+export function formatSaveAge(savedAt: number, now = Date.now()): string {
+  const sec = Math.max(0, Math.floor((now - savedAt) / 1000));
+  if (sec < 60) return 'just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 48) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+}
+
 export function writeSave(data: SaveData): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
