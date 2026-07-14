@@ -43,6 +43,7 @@ export class UIScene extends Phaser.Scene {
   private foldOverlay!: Phaser.GameObjects.Container;
   private foldBody!: Phaser.GameObjects.Text;
   private paused = false;
+  private onVisibilityChange!: () => void;
   private touchRoot!: Phaser.GameObjects.Container;
   private stickKnob!: Phaser.GameObjects.Arc;
   private stickOrigin = new Phaser.Math.Vector2(110, 600);
@@ -150,12 +151,18 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     const pBody = this.add
-      .text(0, 30, 'Esc to resume · N opens Fold · M / Music button toggles music · Tab hides HUD · auto-saves', {
-        fontFamily: 'Source Sans 3, sans-serif',
-        fontSize: '20px',
-        color: '#c9e0d8',
-        align: 'center',
-      })
+      .text(
+        0,
+        30,
+        'Esc to resume · N opens Fold · M / Music button toggles music · Tab hides HUD · hiding the browser tab also pauses',
+        {
+          fontFamily: 'Source Sans 3, sans-serif',
+          fontSize: '20px',
+          color: '#c9e0d8',
+          align: 'center',
+          wordWrap: { width: Math.min(520, this.scale.width - 48) },
+        },
+      )
       .setOrigin(0.5);
     this.pauseOverlay = this.add
       .container(this.scale.width / 2, this.scale.height / 2, [pBg, pTitle, pBody])
@@ -207,8 +214,17 @@ export class UIScene extends Phaser.Scene {
       this.toggleHudChrome();
     });
 
+    this.onVisibilityChange = () => {
+      if (document.hidden) this.setPaused(true);
+    };
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+
     this.scale.on('resize', () => this.layout());
     this.layout();
+  }
+
+  shutdown(): void {
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
   }
 
   private toggleHudChrome(): void {
@@ -353,7 +369,12 @@ export class UIScene extends Phaser.Scene {
   }
 
   private togglePause(): void {
-    this.paused = !this.paused;
+    this.setPaused(!this.paused);
+  }
+
+  private setPaused(next: boolean): void {
+    if (this.paused === next) return;
+    this.paused = next;
     this.pauseOverlay.setVisible(this.paused);
     if (this.paused) {
       if (this.scene.isActive('world')) this.scene.pause('world');
